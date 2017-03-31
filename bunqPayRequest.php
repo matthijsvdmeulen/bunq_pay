@@ -10,12 +10,10 @@ const BUNQ_API_VERSION = 'v1';
 $API_KEY = 'Your bunq API-key';
 
 //Your RSA keys used for installation
-$clientPublicKey = "-----BEGIN PUBLIC KEY-----
-Your Public key
------END PUBLIC KEY-----";
-$clientPrivateKey = "-----BEGIN RSA PRIVATE KEY-----
-Your private key
------END RSA PRIVATE KEY-----";
+//Try to avoid having your keys in your project and/or repository.
+//Store the keys seperately on your server if possible.
+$clientPublicKey = file_get_contents("/var/keys/client.pub");
+$clientPrivateKey = file_get_contents("/var/keys/client.key");
 
 $createUuid = uniqid();
 $bunqUserId = '';
