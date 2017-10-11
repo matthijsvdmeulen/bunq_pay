@@ -24,7 +24,7 @@
 
 $(document).ready(function() {
 	var requestToken='';
-	var bunqmeGuid = '';
+	var bunqmeUuid = '';
 	var bunqMeMerchantRequest = '';
 	$('input.currency').currencyInput();
   
@@ -40,25 +40,21 @@ $(document).ready(function() {
 
 	$('#btnPay').click(function() {
 		if($('input.currency').val()>0){
-			
 			$.get( "bunqPayRequest.php?amount="+$( "#inputAmount" ).val(), function(JSONdata) {
-				var n = JSONdata[0].lastIndexOf('/');
-				bunqmeGuid = JSONdata[0].substring(n + 1);
-				
+				bunqmeUuid = JSONdata.substr(JSONdata.lastIndexOf('/') + 1);
 				$.ajax({
 					type: 'POST',
 					data: '{}',
-					url: 'https://api.bunq.me/v1/bunqme-request/'+bunqmeGuid+'/bunqme-reassign-request-token',
+					url: 'https://api.bunq.me/v1/bunqme-tab-entry/'+bunqmeUuid+'/qr-code-content',
 					beforeSend: function(xhr) {
 						xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
 					},
 					success: function(tokenData) {
-						requestToken = tokenData['Response'];
-						
+						qrToken = tokenData['Response'][0]['Uuid']['uuid'];
 						$.ajax({
 							type: 'GET',
 							data: '{}',
-							url: 'https://api.bunq.me/v1/bunqme-request/'+bunqmeGuid+'/bunqme-reassign-request-token/'+tokenData['Response'],
+							url: 'https://api.bunq.me/v1/bunqme-tab-entry/'+bunqmeUuid+'/qr-code-content/'+qrToken,
 							beforeSend: function(xhr) {
 								xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
 							},
@@ -76,29 +72,34 @@ $(document).ready(function() {
 	$( "#idealIssuer" ).change(function () {
 		$.ajax({
 			type: 'POST',
-			data: '{"amount_requested":{"currency":"EUR","value":"'+$( "#inputAmount" ).val()+'"},"issuer":"'+$( "#idealIssuer option:selected" ).val()+'","merchant_type":"IDEAL","token":"'+bunqmeGuid+'"}',
+			data: '{"amount_requested":{"currency":"EUR","value":"'+$( "#inputAmount" ).val()+'"}, "bunqme_type":"TAB", "issuer":"'+$( "#idealIssuer option:selected" ).val()+'","merchant_type":"IDEAL","bunqme_uuid":"'+bunqmeUuid+'"}',
 			url: 'https://api.bunq.me/v1/bunqme-merchant-request',
 			beforeSend: function(xhr) {
 				xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
 			},
 			success: function(idealData) {
-				bunqMeMerchantRequest = idealData['Response'][0]['BunqMeMerchantRequest']['uuid'];
-			}
-		});
-		
-	});
-	
-
-	$('#btnGetIdealLink').click(function() {
-		$.ajax({
-			type: 'GET',
-			data: '{}',
-			url: 'https://api.bunq.me/v1/bunqme-merchant-request/'+bunqMeMerchantRequest,
-			beforeSend: function(xhr) {
-				xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
-			},
-			success: function(idealData) {
-				$('#iDEALlink').html('<a href='+idealData['Response'][0]['BunqMeMerchantRequest']['issuer_authentication_url']+' target=_blank><b>'+idealData['Response'][0]['BunqMeMerchantRequest']['issuer_authentication_url']+'</b></a>');
+				bunqMeMerchantRequestUuid = idealData['Response'][0]['BunqMeMerchantRequest']['uuid'];
+				var paymentStatus = 'PAYMENT_WAITING_FOR_CREATION';
+				
+				$('#iDEALlink').html('Please wait for payment link...');
+				var interval = setInterval(function(){
+					$.ajax({
+						type: 'GET',
+						data: '',
+						url: 'https://api.bunq.me/v1/bunqme-merchant-request/'+bunqMeMerchantRequestUuid,
+						beforeSend: function(xhr) {
+							xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
+						},
+						success: function(idealData) {
+							paymentStatus = idealData['Response'][0]['BunqMeMerchantRequest']['status'];
+							if (paymentStatus == 'PAYMENT_CREATED'){
+								$('#iDEALlink').html('<a href='+idealData['Response'][0]['BunqMeMerchantRequest']['issuer_authentication_url']+' target=_blank><b>'+idealData['Response'][0]['BunqMeMerchantRequest']['issuer_authentication_url']+'</b></a>');
+								clearInterval(interval);
+								return;
+							}
+						}
+					});
+				}, 1000);
 			}
 		});
 		
@@ -130,11 +131,12 @@ $(document).ready(function() {
 </style>
 
 <input type="number" id="inputAmount" class="currency" min="0.01" max="2500.00" value="" />
-<br/><br/>
-<button type="button" class="btn" id="btnPay">Betaal</button>
+<br/>
+<button type="button" class="btn" id="btnPay">Pay</button>
 <br/>
 <img id="qr-code-bunq" src="">
 <br/>
+<b>iDEAL:</b> 
 <select name="idealIssuer" id="idealIssuer">
 	<option value="" disabled="" selected="">Select a bank</option>
 	<option value="ABNANL2A">ABNAMRO Bank </option>
@@ -147,5 +149,5 @@ $(document).ready(function() {
 	<option value="TRIONL2U">Triodos Bank </option>
 	<option value="FVLBNL22">Van Lanschot</option>
 </select>
-<button type="button" class="btn" id="btnGetIdealLink">iDEAL</button>
+<br/>
 <p id="iDEALlink"></p>

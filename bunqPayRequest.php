@@ -1,67 +1,77 @@
 <?php
-header('Content-Type: application/json');
-include_once('./Request.php');
-use bunq\doc\showcase\Request;
+/**
+ * bunq_pay
+ * Pay with bunq or by iDEAL
+ *
+ * @author	Bastiaan Steinmeier <bastiaan85@gmail.com>
+ * @license	http://opensource.org/licenses/mit-license.php MIT License
+ *
+ * Uses the official bunq PHP SDK
+ * https://github.com/bunq/sdk_php
+ */
+ 
+use bunq\Context\ApiContext;
+use bunq\Util\BunqEnumApiEnvironmentType;
+use bunq\Model\Generated\Endpoint\User;
+use bunq\Model\Generated\Endpoint\UserPerson;
+use bunq\Model\Generated\Endpoint\MonetaryAccount;
+use bunq\Model\Generated\Object\Amount;
+use bunq\Model\Generated\Object\Pointer;
+use bunq\Model\Generated\Endpoint\BunqMeTab;
+use bunq\Model\Generated\Endpoint\BunqMeTabEntry;
+require_once(__DIR__ . '/vendor/autoload.php');
 
-const BUNQ_API_SERVICE_URL = 'https://api.bunq.com';
-const BUNQ_API_VERSION = 'v1';
+/**
+ * Database functions
+ */
+require_once(__DIR__ . '/classes/database.php');
 
-//Your bunq API-key
-$API_KEY = 'Your bunq API-key';
+/**
+ * SQLlite3 database location
+ */
+$database = new Database('/var/www/database/bunqSession.db');
 
-//Your RSA keys used for installation
-//Try to avoid having your keys in your project and/or repository.
-//Store the keys seperately on your server if possible.
-$clientPublicKey = file_get_contents("/var/keys/client.pub");
-$clientPrivateKey = file_get_contents("/var/keys/client.key");
-
-$createUuid = uniqid();
-$bunqUserId = '';
-$bunqMonetaryAccount = '';
-$bunqAuthToken = ''; //To do: Automatic get token 
-
+/** 
+ * Constants and settings
+ */
+const deviceServerDescription = 'eMonkey - bunq API v1';
+const permitted_ips = [];
+const paymentDescription = 'Payment request';
+const index_user = 0;
+const index_monetaryaccount = 0;
 $requestAmount = $_GET['amount'];
-$requestDescription = '';
 
-$arrayBody = [];
-$postBody = '{"amount_inquired": {"value": "'.$requestAmount.'","currency": "EUR"},"counterparty_alias": {"type": "EMAIL","value": "your_request_email@domain.com"},"description": "'.$requestDescription.'","allow_bunqme": true}';
+/**
+ * Only run first time (once) and remove after:
+ * $apiKey = 'YOUR_API_KEY';
+ * $apiContext = ApiContext::create(BunqEnumApiEnvironmentType::PRODUCTION(), $apiKey, deviceServerDescription, permitted_ips);
+ * $database->setBunqContext($apiContext->toJson());
+ */
 
-$monetaryAccountRequest = new Request(BUNQ_API_SERVICE_URL, BUNQ_API_VERSION);
-$monetaryAccountRequest->setMethod(Request::METHOD_POST);
-$monetaryAccountRequest->setEndpoint('user/'.$bunqUserId.'/monetary-account/'.$bunqMonetaryAccount.'/request-inquiry');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CACHE_CONTROL, 'no-cache');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_USER_AGENT, 'User agent - bunq API v1'); //Change this
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_REQUEST_ID, $createUuid);
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_GEOLOCATION, '0 0 0 0 000');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_LANGUAGE, 'en_US');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_REGION, 'en_US');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_AUTHENTICATION, $bunqAuthToken);
-$monetaryAccountRequest->setBody($postBody);
-$signature = $monetaryAccountRequest->getSignature($clientPrivateKey);
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_SIGNATURE, $signature);
+$apiContext = ApiContext::fromJson($database->getBunqContext());
+$apiContext->ensureSessionActive();
 
-$monetaryAccountResponse = $monetaryAccountRequest->execute();
-$requestId = json_decode($monetaryAccountResponse->{'Response'}[0]->{'Id'}->{'id'});
+$users = User::listing($apiContext)->getValue();
+/**
+ * If your user is UserPerson replace getUserCompany() with getUserPerson()
+ * Also replace bunq\Model\Generated\Endpoint\UserCompany 
+ */
+$user = $users[index_user]->getUserCompany();
+$userId = $user->getId();
+$monetaryAccounts = MonetaryAccount::listing($apiContext, $userId)->getValue();
+$monetaryAccount = $monetaryAccounts[index_monetaryaccount]->getMonetaryAccountBank();
+$monetaryAccountId = $monetaryAccount->getId();
 
-$postBody = '';
-$createUuid = uniqid();
+$requestMap = [
+	BunqMeTab::FIELD_BUNQME_TAB_ENTRY => [
+        BunqMeTabEntry::FIELD_AMOUNT_INQUIRED => new Amount($requestAmount, 'EUR'),
+		BunqMeTabEntry::FIELD_DESCRIPTION => paymentDescription
+	]
+];
 
-$monetaryAccountRequest = new Request(BUNQ_API_SERVICE_URL, BUNQ_API_VERSION);
-$monetaryAccountRequest->setMethod(Request::METHOD_GET);
-$monetaryAccountRequest->setEndpoint('user/'.$bunqUserId.'/monetary-account/'.$bunqMonetaryAccount.'/request-inquiry/'.$requestId);
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CACHE_CONTROL, 'no-cache');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_USER_AGENT, 'User agent - bunq API v1'); //Change this
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_REQUEST_ID, $createUuid);
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_GEOLOCATION, '0 0 0 0 000');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_LANGUAGE, 'en_US');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_REGION, 'en_US');
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_AUTHENTICATION, $bunqAuthToken);
-$monetaryAccountRequest->setBody($postBody);
-$signature = $monetaryAccountRequest->getSignature($clientPrivateKey);
-$monetaryAccountRequest->setHeader(Request::HEADER_REQUEST_CUSTOM_SIGNATURE, $signature);
+$createBunqMeTab = BunqMeTab::create($apiContext, $requestMap, $userId, $monetaryAccountId)->getValue();
+$bunqMeRequest = BunqMeTab::get($apiContext, $userId, $monetaryAccountId, $createBunqMeTab)->getValue();
 
-$monetaryAccountResponse = $monetaryAccountRequest->execute();
-$bunqmeShareUrl = json_encode((array)$monetaryAccountResponse->{'Response'}[0]->{'RequestInquiry'}->{'bunqme_share_url'});
-
-echo $bunqmeShareUrl;
+header('Content-Type: application/json');
+echo json_encode($bunqMeRequest->getBunqmeTabShareUrl());
 ?>
