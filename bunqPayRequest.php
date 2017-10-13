@@ -34,7 +34,7 @@ $database = new Database('/var/www/database/bunqSession.db');
 /** 
  * Constants and settings
  */
-const deviceServerDescription = 'eMonkey - bunq API v1';
+const deviceServerDescription = 'bunq_pay v1';
 const permitted_ips = [];
 const paymentDescription = 'Payment request';
 const index_user = 0;
@@ -44,12 +44,13 @@ $requestAmount = $_GET['amount'];
 /**
  * Only run first time (once) and remove after:
  * $apiKey = 'YOUR_API_KEY';
- * $apiContext = ApiContext::create(BunqEnumApiEnvironmentType::PRODUCTION(), $apiKey, deviceServerDescription, permitted_ips);
+ * $apiContext = ApiContext::create(BunqEnumApiEnvironmentType::SANDBOX(), $apiKey, deviceServerDescription, permitted_ips);
  * $database->setBunqContext($apiContext->toJson());
  */
 
 $apiContext = ApiContext::fromJson($database->getBunqContext());
 $apiContext->ensureSessionActive();
+$database->setBunqContext($apiContext->toJson());
 
 $users = User::listing($apiContext)->getValue();
 /**
