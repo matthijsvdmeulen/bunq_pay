@@ -38,6 +38,24 @@ $(document).ready(function() {
 			s4() + '-' + s4() + s4() + s4();
 	}
 
+	function getIdealIssuers() {
+		$.ajax({
+			type: 'GET',
+			url: 'https://api.bunq.me/v1/bunqme-merchant-directory-ideal',
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("X-Bunq-Client-Request-Id", guid());
+			},
+			success: function(issuerData) {
+				idealIssuers = issuerData['Response'][0]['IdealDirectory']['country'][0]['issuer'];
+				$.each(idealIssuers, function(key, value) {   
+					$('#idealIssuer').append($("<option></option>")
+						.attr("value",value.bic)
+						.text(value.name)); 
+				});
+			}
+		});
+	}
+
 	$('#btnPay').click(function() {
 		if($('input.currency').val()>0){
 			$.get( "bunqPayRequest.php?amount="+$( "#inputAmount" ).val(), function(JSONdata) {
@@ -60,11 +78,11 @@ $(document).ready(function() {
 							},
 							success: function(qrCodeData) {
 								$('#qr-code-bunq').attr('src','data:image/png;base64,'+qrCodeData['Response'][0]['QrCodeImage']['base64'])
+								getIdealIssuers();
 							}
 						});
 					}
 				});
-				
 			});
 		}
 	});  
@@ -102,9 +120,7 @@ $(document).ready(function() {
 				}, 1000);
 			}
 		});
-		
 	});
-	
 });
 </script>
 
@@ -139,15 +155,6 @@ $(document).ready(function() {
 <b>iDEAL:</b> 
 <select name="idealIssuer" id="idealIssuer">
 	<option value="" disabled="" selected="">Select a bank</option>
-	<option value="ABNANL2A">ABNAMRO Bank </option>
-	<option value="ASNBNL21">ASN Bank</option>
-	<option value="INGBNL2A">ING Bank</option>
-	<option value="KNABNL2H">Knab</option>
-	<option value="RABONL2U">Rabobank</option>
-	<option value="RBRBNL21">RegioBank</option>
-	<option value="SNSBNL2A">SNS Bank</option>
-	<option value="TRIONL2U">Triodos Bank </option>
-	<option value="FVLBNL22">Van Lanschot</option>
 </select>
 <br/>
 <p id="iDEALlink"></p>
