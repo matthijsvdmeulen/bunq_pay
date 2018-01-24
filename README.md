@@ -8,7 +8,7 @@ Demo video: https://youtu.be/aLlP9Nx0WYA
 - Make a new directory
 - cd into new directory
 ```shell
-git clone https://github.com/basst85/bunq_pay.git
+$ git clone https://github.com/basst85/bunq_pay.git
 ```
 - Run composer install to install all requirements:
 ```shell
