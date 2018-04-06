@@ -10,6 +10,11 @@
  * https://github.com/bunq/sdk_php
  */
  
+if(!isset($_GET['amount'])){
+	echo "The 'amount' argument was not set";
+	die();
+}
+ 
 use bunq\Context\ApiContext;
 use bunq\Util\BunqEnumApiEnvironmentType;
 use bunq\Model\Generated\Endpoint\User;
@@ -26,27 +31,18 @@ require_once(__DIR__ . '/vendor/autoload.php');
  */
 require_once(__DIR__ . '/classes/database.php');
 
-/**
- * SQLlite3 database location
- */
-$database = new Database('/var/www/database/bunqSession.db');
-
 /** 
  * Constants and settings
  */
-const deviceServerDescription = 'bunq_pay v1';
-const permitted_ips = [];
-const paymentDescription = 'Payment request';
+const dbPath = '/var/local/bunq/database/bunqSession.db';
 const index_user = 0;
 const index_monetaryaccount = 0;
 $requestAmount = $_GET['amount'];
 
 /**
- * Only run first time (once) and remove after:
- * $apiKey = 'YOUR_API_KEY';
- * $apiContext = ApiContext::create(BunqEnumApiEnvironmentType::SANDBOX(), $apiKey, deviceServerDescription, permitted_ips);
- * $database->setBunqContext($apiContext->toJson());
+ * SQLlite3 database location
  */
+$database = new Database(dbPath);
 
 $apiContext = ApiContext::fromJson($database->getBunqContext());
 $apiContext->ensureSessionActive();
