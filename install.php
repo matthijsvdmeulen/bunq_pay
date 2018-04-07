@@ -15,7 +15,6 @@
 
 use bunq\Context\ApiContext;
 use bunq\Context\BunqContext;
-use bunq\Model\Generated\Endpoint\MonetaryAccount;
 use bunq\Model\Generated\Endpoint\MonetaryAccountBank;
 use bunq\Util\BunqEnumApiEnvironmentType;
 require_once(__DIR__ . '/vendor/autoload.php');
