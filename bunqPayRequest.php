@@ -22,7 +22,6 @@ use bunq\Model\Generated\Endpoint\User;
 use bunq\Model\Generated\Endpoint\UserPerson;
 use bunq\Model\Generated\Endpoint\MonetaryAccount;
 use bunq\Model\Generated\Object\Amount;
-use bunq\Model\Generated\Object\Pointer;
 use bunq\Model\Generated\Endpoint\BunqMeTab;
 use bunq\Model\Generated\Endpoint\BunqMeTabEntry;
 require_once(__DIR__ . '/vendor/autoload.php');
