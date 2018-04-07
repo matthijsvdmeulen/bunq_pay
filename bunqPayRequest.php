@@ -20,7 +20,7 @@ use bunq\Context\BunqContext;
 use bunq\Util\BunqEnumApiEnvironmentType;
 use bunq\Model\Generated\Endpoint\User;
 use bunq\Model\Generated\Endpoint\UserPerson;
-use bunq\Model\Generated\Endpoint\MonetaryAccount;
+use bunq\Model\Generated\Endpoint\MonetaryAccountBank;
 use bunq\Model\Generated\Object\Amount;
 use bunq\Model\Generated\Endpoint\BunqMeTab;
 use bunq\Model\Generated\Endpoint\BunqMeTabEntry;
@@ -60,8 +60,8 @@ $userId = $user->getId();
 /**
  * Get monetary account of the active user
  */
-$monetaryAccounts = MonetaryAccount::listing([])->getValue();
-$monetaryAccountId = $monetaryAccounts[index_monetaryaccount]->getMonetaryAccountBank()->getId();
+$monetaryAccounts = MonetaryAccountBank::listing([])->getValue();
+$monetaryAccountId = $monetaryAccounts[index_monetaryaccount]->getId();
 
 /**
  * Create bunqMeTab (open request) and get share URL
