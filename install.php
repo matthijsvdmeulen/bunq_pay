@@ -14,6 +14,9 @@
  */
 
 use bunq\Context\ApiContext;
+use bunq\Context\BunqContext;
+use bunq\Model\Generated\Endpoint\MonetaryAccount;
+use bunq\Model\Generated\Endpoint\MonetaryAccountBank;
 use bunq\Util\BunqEnumApiEnvironmentType;
 require_once(__DIR__ . '/vendor/autoload.php');
 
@@ -41,4 +44,19 @@ $database = new Database(dbPath);
  */
 $apiContext = ApiContext::create(BunqEnumApiEnvironmentType::SANDBOX(), apiKey, deviceServerDescription, permitted_ips);
 $database->setBunqContext($apiContext->toJson());
+BunqContext::loadApiContext($apiContext);
+
+/**
+ * Return list of active monetary accounts of the active user
+ */
+$monetaryAccounts = MonetaryAccountBank::listing([])->getValue();
+
+echo 'Active monetary accounts: <br/>';
+$index = 0;
+foreach ($monetaryAccounts as $monetaryAccount) {
+	if ($monetaryAccount->getStatus() === 'ACTIVE') {
+		echo 'Index: ', $index,' Id: ', $monetaryAccount->getId(), ' Description: ', $monetaryAccount->getDescription(), '<br/>';
+	}
+	$index++;
+}
 ?>
