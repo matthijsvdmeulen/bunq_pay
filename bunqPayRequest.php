@@ -35,7 +35,7 @@ require_once(__DIR__ . '/classes/database.php');
 /** 
  * Constants and settings
  */
-const dbPath = '/var/www/emonkey.nl/bunq/bunq_pay/database/bunqSession.db';
+const dbPath = '/usr/local/bunq_pay/database/bunqSession.db';
 const index_user = 0;
 const index_monetaryaccount = 0;
 const paymentDescription = 'Payment request';
