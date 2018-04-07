@@ -16,7 +16,7 @@ $ composer install
 ```
 - The database directory must be writeable by the web user, also the .db file must be writeable.
 #### Make sure that the database directory is absolutely not accessible from the internet!
-- Change the path to the database on line 29 of install.php and on line 37 of bunqPayRequest.php, fill with correct path.
+- Change the path to the database on line 29 of install.php and bunqPayRequest.php, fill with correct path.
 - Change YOUR_API_KEY in install.php, use your bunq API-key (for the Sandbox environment in this example).
 - Run install.php once to get the bunq session and save it to the SQLlite database.
 

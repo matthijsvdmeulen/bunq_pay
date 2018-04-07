@@ -16,6 +16,7 @@ if(!isset($_GET['amount'])){
 }
  
 use bunq\Context\ApiContext;
+use bunq\Context\BunqContext;
 use bunq\Util\BunqEnumApiEnvironmentType;
 use bunq\Model\Generated\Endpoint\User;
 use bunq\Model\Generated\Endpoint\UserPerson;
@@ -34,9 +35,10 @@ require_once(__DIR__ . '/classes/database.php');
 /** 
  * Constants and settings
  */
-const dbPath = '/var/local/bunq/database/bunqSession.db';
+const dbPath = '/var/www/emonkey.nl/bunq/bunq_pay/database/bunqSession.db';
 const index_user = 0;
 const index_monetaryaccount = 0;
+const paymentDescription = 'Payment request';
 $requestAmount = $_GET['amount'];
 
 /**
@@ -47,27 +49,27 @@ $database = new Database(dbPath);
 $apiContext = ApiContext::fromJson($database->getBunqContext());
 $apiContext->ensureSessionActive();
 $database->setBunqContext($apiContext->toJson());
+BunqContext::loadApiContext($apiContext);
 
-$users = User::listing($apiContext)->getValue();
 /**
  * If your user is UserPerson replace getUserCompany() with getUserPerson()
  * Also replace bunq\Model\Generated\Endpoint\UserCompany 
  */
-$user = $users[index_user]->getUserCompany();
+$user = BunqContext::getUserContext()->getUserCompany();
 $userId = $user->getId();
-$monetaryAccounts = MonetaryAccount::listing($apiContext, $userId)->getValue();
-$monetaryAccount = $monetaryAccounts[index_monetaryaccount]->getMonetaryAccountBank();
-$monetaryAccountId = $monetaryAccount->getId();
 
-$requestMap = [
-	BunqMeTab::FIELD_BUNQME_TAB_ENTRY => [
-        BunqMeTabEntry::FIELD_AMOUNT_INQUIRED => new Amount($requestAmount, 'EUR'),
-		BunqMeTabEntry::FIELD_DESCRIPTION => paymentDescription
-	]
-];
+/**
+ * Get monetary account of the active user
+ */
+$monetaryAccounts = MonetaryAccount::listing([])->getValue();
+$monetaryAccountId = $monetaryAccounts[index_monetaryaccount]->getMonetaryAccountBank()->getId();
 
-$createBunqMeTab = BunqMeTab::create($apiContext, $requestMap, $userId, $monetaryAccountId)->getValue();
-$bunqMeRequest = BunqMeTab::get($apiContext, $userId, $monetaryAccountId, $createBunqMeTab)->getValue();
+/**
+ * Create bunqMeTab (open request) and get share URL
+ */
+$bunqMeTabEntry = new BunqMeTabEntry(paymentDescription, new Amount($requestAmount, 'EUR'));
+$createBunqMeTab = BunqMeTab::create($bunqMeTabEntry, $monetaryAccountId)->getValue();
+$bunqMeRequest = BunqMeTab::get($createBunqMeTab, $monetaryAccountId)->getValue();
 
 header('Content-Type: application/json');
 echo json_encode($bunqMeRequest->getBunqmeTabShareUrl());

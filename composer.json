@@ -19,7 +19,7 @@
         }
     ],
     "require": {
-        "bunq/sdk_php": "^0.13.1"
+        "bunq/sdk_php": "dev-develop"
     },
     "require-dev": {
 	"phpunit/phpunit": "^5.7"
