@@ -58,7 +58,7 @@ $(document).ready(function() {
 
 	$('#btnPay').click(function() {
 		if($('input.currency').val()>0){
-			$.get( "bunqPayRequest.php?amount="+$( "#inputAmount" ).val(), function(JSONdata) {
+			$.get( "bunqPayRequest.php?amount="+$( "#inputAmount" ).val()+"&description="+$("#inputDescription").val(), function(JSONdata) {
 				bunqmeUuid = JSONdata.substr(JSONdata.lastIndexOf('/') + 1);
 				$.ajax({
 					type: 'POST',
@@ -146,7 +146,9 @@ $(document).ready(function() {
 }
 </style>
 
-<input type="number" id="inputAmount" class="currency" min="0.01" max="2500.00" value="" />
+Amount: <input type="number" id="inputAmount" min="0.01" max="2500.00" value=""  />
+<br>
+Description: <input type="text" id="inputDescription" value="Food" />
 <br/>
 <button type="button" class="btn" id="btnPay">Pay</button>
 <br/>
