@@ -28,7 +28,7 @@ require_once(__DIR__ . '/classes/database.php');
  * Constants and settings
  */
 const apiKey = 'YOUR_API_KEY';
-const dbPath = '/var/local/bunq_pay/database/bunqSession.db';
+const dbPath = __DIR__ . '/database/bunqSession.db';
 const deviceServerDescription = 'bunq_pay v1';
 const permitted_ips = [];
 const paymentDescription = 'Payment request';
